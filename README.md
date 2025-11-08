@@ -22,7 +22,6 @@ Deploy a self-hosted Ghost CMS on GCP with serverless architecture. Scales to ze
 - GCP account with billing enabled
 - [gcloud CLI](https://cloud.google.com/sdk/docs/install)
 - [Terraform](https://www.terraform.io/downloads) (>= 1.0)
-- [Docker](https://docs.docker.com/get-docker/)
 
 ### Deploy in 3 Steps
 
@@ -32,8 +31,8 @@ git clone https://github.com/YOUR_USERNAME/deploy-ghost-on-gcp.git
 cd deploy-ghost-on-gcp
 cp .env.example .env
 
-# 2. Edit .env with your GCP project ID
-nano .env  # Set GCP_PROJECT_ID and optionally GHOST_URL
+# 2. Edit .env with your configuration
+nano .env  # Set GCP_PROJECT_ID and GHOST_URL
 
 # 3. Deploy
 make setup
@@ -69,12 +68,17 @@ Edit `.env` and set:
 ```bash
 GCP_PROJECT_ID=your-project-id
 GCP_REGION=us-central1  # or your preferred region
+
+# Ghost URL - use a placeholder initially, update after deployment
+GHOST_URL=https://ghost-cms-PROJECT_ID.run.app
 ```
+
+**Note**: Set `GHOST_URL` to your intended domain, or use a placeholder Cloud Run URL format. After deployment, you'll get the actual URL and can update it.
 
 ### Optional Settings
 
 ```bash
-# Custom domain (defaults to Cloud Run URL if not set)
+# Custom domain
 GHOST_URL=https://blog.yourdomain.com
 
 # Email configuration

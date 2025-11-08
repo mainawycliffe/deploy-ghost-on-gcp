@@ -105,18 +105,53 @@ if ($confirmation -ne "yes") {
     exit 1
 }
 
-# Apply infrastructure
-Write-Host "Creating infrastructure..." -ForegroundColor Blue
-terraform apply tfplan
+# Apply infrastructure (except Cloud Run service)
+Write-Host "Creating infrastructure (database, storage, etc.)..." -ForegroundColor Blue
+terraform apply -auto-approve `
+  -target=google_project_service.required_apis `
+  -target=google_service_account.ghost_sa `
+  -target=google_storage_bucket.ghost_content `
+  -target=google_storage_bucket_iam_member.public_read `
+  -target=google_storage_bucket_iam_member.ghost_storage_admin `
+  -target=google_project_iam_member.ghost_cloudsql_client `
+  -target=google_secret_manager_secret.db_password `
+  -target=google_secret_manager_secret_version.db_password_version `
+  -target=google_secret_manager_secret_iam_member.ghost_secret_accessor `
+  -target=google_artifact_registry_repository.ghost_repo `
+  -target=google_sql_database_instance.ghost_db `
+  -target=google_sql_database.ghost_database `
+  -target=google_sql_user.ghost_user `
+  -target=random_id.suffix `
+  -target=random_password.db_password
 
 Write-Host "✓ Infrastructure created successfully!" -ForegroundColor Green
 Write-Host ""
 
 Set-Location ..
 
-# Build and deploy Ghost
-Write-Host "Building and deploying Ghost CMS..." -ForegroundColor Blue
-.\deploy.ps1
+# Build and push Docker image
+Write-Host "Building and pushing Docker image..." -ForegroundColor Blue
+Set-Location terraform
+$artifactRegistryUrl = terraform output -raw artifact_registry_url
+Set-Location ..
+$imageName = "$artifactRegistryUrl/ghost-cms:latest"
+
+Write-Host "Building image: $imageName" -ForegroundColor Yellow
+docker build -t $imageName .
+
+Write-Host "Configuring Docker authentication..." -ForegroundColor Yellow
+gcloud auth configure-docker "$env:GCP_REGION-docker.pkg.dev" --quiet
+
+Write-Host "Pushing image to Artifact Registry..." -ForegroundColor Yellow
+docker push $imageName
+
+Write-Host "✓ Docker image built and pushed!" -ForegroundColor Green
+Write-Host ""
+
+# Deploy Cloud Run service
+Write-Host "Deploying Ghost to Cloud Run..." -ForegroundColor Blue
+Set-Location terraform
+terraform apply -auto-approve
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Green

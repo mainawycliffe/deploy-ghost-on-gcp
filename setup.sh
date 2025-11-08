@@ -69,7 +69,7 @@ if [ ! -f terraform.tfvars ]; then
 project_id = "$GCP_PROJECT_ID"
 region     = "$GCP_REGION"
 ghost_url  = "$GHOST_URL_VALUE"
-mail_from  = $MAIL_FROM
+mail_from  = "\"Ghost Test\" <noreply@example.com>"
 
 database_tier           = "$DATABASE_TIER"
 cloud_run_min_instances = $CLOUD_RUN_MIN_INSTANCES
@@ -111,17 +111,9 @@ if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
 fi
 
 # Apply infrastructure
-echo -e "${BLUE}Creating infrastructure...${NC}"
+echo -e "${BLUE}Creating infrastructure and deploying Ghost...${NC}"
+echo -e "${YELLOW}This will take 10-15 minutes (Cloud SQL provisioning is slow)${NC}"
 terraform apply tfplan
-
-echo -e "${GREEN}✓ Infrastructure created successfully!${NC}"
-echo ""
-
-cd ..
-
-# Build and deploy Ghost
-echo -e "${BLUE}Building and deploying Ghost CMS...${NC}"
-bash deploy.sh
 
 echo ""
 echo -e "${GREEN}========================================${NC}"

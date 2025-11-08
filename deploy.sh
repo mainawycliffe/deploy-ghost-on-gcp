@@ -39,33 +39,9 @@ done
 echo -e "${YELLOW}Setting GCP project to: $GCP_PROJECT_ID${NC}"
 gcloud config set project "$GCP_PROJECT_ID"
 
-# Get Artifact Registry repository URL from Terraform output
+echo -e "${YELLOW}Building and deploying Ghost...${NC}"
 cd terraform
-ARTIFACT_REGISTRY_URL=$(terraform output -raw artifact_registry_url 2>/dev/null || echo "")
-cd ..
-
-if [ -z "$ARTIFACT_REGISTRY_URL" ]; then
-    echo -e "${RED}Error: Could not get Artifact Registry URL from Terraform${NC}"
-    echo "Please run: cd terraform && terraform apply"
-    exit 1
-fi
-
-IMAGE_NAME="${ARTIFACT_REGISTRY_URL}/ghost-cms"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
-FULL_IMAGE_NAME="${IMAGE_NAME}:${IMAGE_TAG}"
-
-echo -e "${YELLOW}Building Docker image...${NC}"
-docker build -t "$FULL_IMAGE_NAME" .
-
-echo -e "${YELLOW}Configuring Docker authentication for Artifact Registry...${NC}"
-gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
-
-echo -e "${YELLOW}Pushing image to Artifact Registry...${NC}"
-docker push "$FULL_IMAGE_NAME"
-
-echo -e "${YELLOW}Deploying to Cloud Run...${NC}"
-cd terraform
-terraform apply -auto-approve -target=google_cloud_run_v2_service.ghost
+terraform apply -auto-approve
 cd ..
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"

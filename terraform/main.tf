@@ -189,9 +189,8 @@ resource "google_sql_database_instance" "ghost_db" {
     }
 
     ip_configuration {
-      ipv4_enabled = false
-      # Cloud Run connects via Unix socket (Cloud SQL Proxy)
-      # No public IP needed for better security
+      ipv4_enabled = true
+      # Public IP enabled to allow Cloud Run connector; no inbound networks are opened.
     }
 
     database_flags {
@@ -234,6 +233,31 @@ resource "google_artifact_registry_repository" "ghost_repo" {
   depends_on = [google_project_service.required_apis]
 }
 
+# Build Docker image using Cloud Build
+resource "terraform_data" "build_ghost_image" {
+  # Trigger rebuild when Dockerfile or config changes
+  triggers_replace = {
+    dockerfile_hash = filemd5("${path.module}/../Dockerfile")
+    config_hash     = filemd5("${path.module}/../config.production.json")
+    entrypoint_hash = filemd5("${path.module}/../docker-entrypoint.sh")
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      gcloud builds submit \
+        --config=${path.module}/../cloudbuild.yaml \
+        --substitutions=_REGION=${var.region},_REPO_ID=ghost-cms,_TAG=latest \
+        --project=${var.project_id} \
+        ${path.module}/..
+    EOT
+  }
+
+  depends_on = [
+    google_artifact_registry_repository.ghost_repo,
+    google_project_service.required_apis
+  ]
+}
+
 # Cloud Run Service
 resource "google_cloud_run_v2_service" "ghost" {
   name     = "ghost-cms"
@@ -269,7 +293,7 @@ resource "google_cloud_run_v2_service" "ghost" {
 
       env {
         name  = "GHOST_URL"
-        value = var.ghost_url != "" ? var.ghost_url : google_cloud_run_v2_service.ghost.uri
+        value = var.ghost_url != "" ? var.ghost_url : "https://ghost-cms-PROJECT_ID.run.app"
       }
 
       env {
@@ -364,6 +388,7 @@ resource "google_cloud_run_v2_service" "ghost" {
     google_project_service.required_apis,
     google_sql_database.ghost_database,
     google_sql_user.ghost_user,
+    terraform_data.build_ghost_image,
   ]
 }
 

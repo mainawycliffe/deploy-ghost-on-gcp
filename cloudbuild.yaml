@@ -1,0 +1,40 @@
+steps:
+  # Build the Ghost CMS Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:${_TAG}'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:latest'
+      - '.'
+    id: 'build-image'
+
+  # Push the image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:${_TAG}'
+    id: 'push-tagged'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:latest'
+    id: 'push-latest'
+
+# Substitution variables
+substitutions:
+  _REGION: 'us-central1'
+  _REPO_ID: 'ghost-cms'
+  _TAG: 'latest'
+
+# Use Cloud Build's default service account
+options:
+  machineType: 'N1_HIGHCPU_8'  # Faster builds
+  logging: CLOUD_LOGGING_ONLY
+
+# Images to be pushed to registry
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:${_TAG}'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:latest'
