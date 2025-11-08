@@ -36,11 +36,23 @@ cp .env.example .env
 nano .env  # Set GCP_PROJECT_ID and optionally GHOST_URL
 
 # 3. Deploy
-chmod +x setup.sh deploy.sh
-./setup.sh
+make setup
+# Or for bash: chmod +x setup.sh deploy.sh && ./setup.sh
+# Or for Windows: .\setup.ps1
 ```
 
 That's it! Your Ghost blog will be running on Cloud Run.
+
+### Windows Users
+
+If you don't have `make` or `bash`, use the PowerShell scripts:
+
+```powershell
+.\setup.ps1   # Initial setup
+.\deploy.ps1  # Deploy updates
+```
+
+Alternatively, install [Git Bash](https://git-scm.com/downloads) or [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) to use the bash scripts and Makefile.
 
 ### After Deployment
 
@@ -106,7 +118,7 @@ gcloud run domain-mappings create \
 Update `GHOST_URL` in `.env` and redeploy:
 
 ```bash
-./deploy.sh
+make deploy
 ```
 
 ## 🔧 Common Operations
@@ -114,15 +126,14 @@ Update `GHOST_URL` in `.env` and redeploy:
 ### View Logs
 
 ```bash
-gcloud run services logs tail ghost-cms \
-  --project=your-project-id \
-  --region=us-central1
+make logs
+# Or: gcloud run services logs tail ghost-cms --project=your-project-id --region=us-central1
 ```
 
 ### Update Ghost
 
 ```bash
-./deploy.sh  # Pulls latest Ghost 5.x
+make deploy  # Pulls latest Ghost 5.x
 ```
 
 ### Manual Backup
@@ -144,7 +155,8 @@ cloud_run_max_instances = 20
 Apply changes:
 
 ```bash
-cd terraform && terraform apply
+make plan   # Preview changes
+make apply  # Apply changes
 ```
 
 ## 🐛 Troubleshooting
@@ -176,7 +188,7 @@ Set minimum instances to 1:
 # Edit terraform/terraform.tfvars
 cloud_run_min_instances = 1
 
-cd terraform && terraform apply
+make apply
 ```
 
 **Note**: This increases costs (~$10/month) but eliminates cold starts.
@@ -198,15 +210,14 @@ Ghost uses direct mail by default. For production, configure SMTP by adding to `
 }
 ```
 
-Then redeploy with `./deploy.sh`.
+Then redeploy with `make deploy`.
 
 ## 🗑️ Cleanup
 
 Remove all resources:
 
 ```bash
-cd terraform
-terraform destroy
+make destroy
 ```
 
 **Warning**: This permanently deletes your database and all content.
@@ -223,10 +234,11 @@ terraform destroy
 ```
 deploy-ghost-on-gcp/
 ├── Dockerfile                   # Multi-stage Ghost + GCS adapter
+├── Makefile                     # Common commands (Mac/Linux)
+├── setup.sh / setup.ps1         # Setup scripts (bash/PowerShell)
+├── deploy.sh / deploy.ps1       # Deploy scripts (bash/PowerShell)
+├── docker-entrypoint.sh         # Container startup script
 ├── config.production.json       # Ghost configuration
-├── docker-entrypoint.sh         # Startup script
-├── setup.sh                     # One-command deployment
-├── deploy.sh                    # Update/redeploy
 ├── .env.example                 # Configuration template
 └── terraform/
     ├── main.tf                  # Infrastructure definition
