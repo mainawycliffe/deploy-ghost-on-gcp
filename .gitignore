@@ -1,0 +1,33 @@
+# Ignore environment files with secrets
+.env
+.env.local
+
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/tfplan
+terraform/terraform.tfvars
+
+# Docker
+.dockerignore
+
+# Local testing
+ghost-data/
+content/
+
+# Node modules (if testing locally)
+node_modules/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

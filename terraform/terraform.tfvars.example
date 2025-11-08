@@ -1,0 +1,14 @@
+# GCP Project Configuration
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+
+# Ghost Configuration
+ghost_url = "https://blog.yourdomain.com"
+mail_from = "\"Your Blog Name\" <noreply@yourdomain.com>"
+
+# Database Configuration
+database_tier = "db-f1-micro"  # Use db-g1-small or higher for production
+
+# Cloud Run Scaling
+cloud_run_min_instances = 0  # Set to 1 to avoid cold starts (costs more)
+cloud_run_max_instances = 10

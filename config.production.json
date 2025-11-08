@@ -1,0 +1,62 @@
+{
+  "url": "${GHOST_URL}",
+  "server": {
+    "port": 2368,
+    "host": "0.0.0.0"
+  },
+  "database": {
+    "client": "mysql",
+    "connection": {
+      "host": "${DATABASE_HOST}",
+      "port": "${DATABASE_PORT}",
+      "socketPath": "${DATABASE_SOCKET_PATH}",
+      "user": "${DATABASE_USER}",
+      "password": "${DATABASE_PASSWORD}",
+      "database": "${DATABASE_NAME}",
+      "charset": "utf8mb4"
+    },
+    "pool": {
+      "min": 0,
+      "max": 5
+    }
+  },
+  "mail": {
+    "transport": "${GHOST_MAIL_TRANSPORT}",
+    "from": "${GHOST_MAIL_FROM}"
+  },
+  "logging": {
+    "level": "info",
+    "rotation": {
+      "enabled": true
+    },
+    "transports": [
+      "stdout"
+    ]
+  },
+  "process": "local",
+  "paths": {
+    "contentPath": "/var/lib/ghost/content"
+  },
+  "storage": {
+    "active": "gcs",
+    "gcs": {
+      "bucket": "${GCS_BUCKET}",
+      "assetDomain": "${GCS_ASSET_DOMAIN}",
+      "insecure": false,
+      "maxAge": 2678400
+    }
+  },
+  "imageOptimization": {
+    "resize": true
+  },
+  "privacy": {
+    "useRpcPing": false,
+    "useUpdateCheck": true
+  },
+  "useMinFiles": true,
+  "caching": {
+    "frontend": {
+      "maxAge": 600
+    }
+  }
+}
