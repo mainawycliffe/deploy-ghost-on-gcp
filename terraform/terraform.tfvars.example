@@ -3,7 +3,7 @@ project_id = "your-gcp-project-id"
 region     = "us-central1"
 
 # Ghost Configuration
-# ghost_url is optional - defaults to Cloud Run URL if not provided
+# Leave ghost_url empty on first deployment, update after getting Cloud Run URL
 ghost_url = ""
 mail_from = "\"Your Blog Name\" <noreply@yourdomain.com>"
 

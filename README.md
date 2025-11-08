@@ -31,16 +31,14 @@ git clone https://github.com/YOUR_USERNAME/deploy-ghost-on-gcp.git
 cd deploy-ghost-on-gcp
 cp .env.example .env
 
-# 2. Edit .env with your configuration
-nano .env  # Set GCP_PROJECT_ID and GHOST_URL
+# 2. Edit .env - only GCP_PROJECT_ID is required!
+nano .env  # Set GCP_PROJECT_ID (leave GHOST_URL empty for now)
 
 # 3. Deploy
 make setup
 # Or for bash: chmod +x setup.sh deploy.sh && ./setup.sh
 # Or for Windows: .\setup.ps1
 ```
-
-That's it! Your Ghost blog will be running on Cloud Run.
 
 ### Windows Users
 
@@ -53,27 +51,35 @@ If you don't have `make` or `bash`, use the PowerShell scripts:
 
 Alternatively, install [Git Bash](https://git-scm.com/downloads) or [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) to use the bash scripts and Makefile.
 
-### After Deployment
+### After First Deployment
 
-1. Visit the Cloud Run URL shown in the output
-2. Go to `/ghost` to create your admin account
-3. (Optional) Map a custom domain following the instructions below
+1. **Copy the Cloud Run URL** from the output (e.g., `https://ghost-cms-xxxxx.run.app`)
+2. **Update .env** with the actual URL:
+   ```bash
+   GHOST_URL=https://ghost-cms-xxxxx.run.app
+   ```
+3. **Redeploy** to update Ghost with correct URL:
+   ```bash
+   make deploy
+   ```
+4. **Setup Ghost**: Visit `/ghost` to create your admin account
+5. **(Optional)** Map a custom domain later
 
 ## ⚙️ Configuration
 
 ### Required Settings
 
-Edit `.env` and set:
+Edit `.env` with minimal configuration:
 
 ```bash
 GCP_PROJECT_ID=your-project-id
 GCP_REGION=us-central1  # or your preferred region
 
-# Ghost URL - use a placeholder initially, update after deployment
-GHOST_URL=https://ghost-cms-PROJECT_ID.run.app
+# Leave GHOST_URL empty on first deployment
+GHOST_URL=
 ```
 
-**Note**: Set `GHOST_URL` to your intended domain, or use a placeholder Cloud Run URL format. After deployment, you'll get the actual URL and can update it.
+**Important**: Leave `GHOST_URL` empty initially. After deployment, update it with the actual Cloud Run URL and redeploy.
 
 ### Optional Settings
 
