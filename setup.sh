@@ -64,10 +64,11 @@ echo -e "${BLUE}Creating Terraform configuration...${NC}"
 cd terraform
 
 if [ ! -f terraform.tfvars ]; then
+    GHOST_URL_VALUE="${GHOST_URL:-}"
     cat > terraform.tfvars <<EOF
 project_id = "$GCP_PROJECT_ID"
 region     = "$GCP_REGION"
-ghost_url  = "$GHOST_URL"
+ghost_url  = "$GHOST_URL_VALUE"
 mail_from  = $MAIL_FROM
 
 database_tier           = "$DATABASE_TIER"

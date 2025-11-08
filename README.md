@@ -5,266 +5,115 @@
 [![Ghost](https://img.shields.io/badge/Ghost-5.x-738A94?logo=ghost)](https://ghost.org/)
 [![GCP](https://img.shields.io/badge/GCP-Cloud%20Run-4285F4?logo=google-cloud)](https://cloud.google.com/run)
 
-Self-hosted Ghost CMS running on Google Cloud Platform with a serverless architecture using Cloud Run, Cloud SQL, and Cloud Storage. This setup provides a scalable, cost-effective solution that can scale to zero when not in use.
+Deploy a self-hosted Ghost CMS on GCP with serverless architecture. Scales to zero, costs ~$20-30/month for low traffic blogs.
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐
-│   Custom Domain │
-│  (Cloud Run URL)│
-└────────┬────────┘
-         │
-┌────────▼────────────┐
-│   Cloud Run         │ ← Ghost CMS (Serverless)
-│   (ghost-cms)       │
-└────┬────────────┬───┘
-     │            │
-     │            └────────────────┐
-     │                             │
-┌────▼──────────────┐   ┌──────────▼──────────┐
-│  Cloud SQL        │   │  Cloud Storage      │
-│  MySQL 8.0        │   │  (Images & Files)   │
-└───────────────────┘   └─────────────────────┘
-```
-
-### Components
-
-- **Cloud Run**: Serverless container hosting for Ghost CMS (scales to zero)
-- **Cloud SQL**: Managed MySQL database for Ghost content
-- **Cloud Storage**: Object storage for images, themes, and uploaded files
-- **Artifact Registry**: Private Docker registry for Ghost container images
-- **Secret Manager**: Secure storage for database credentials
-- **Service Account**: IAM identity with minimal required permissions
-
-## ✨ Features
-
-- 🚀 **One-command deployment** with automated setup scripts
-- 💰 **Cost-effective** - scales to zero when not in use (~$20-30/month for low traffic)
-- 🔒 **Secure** - No public database IP, secrets in Secret Manager
-- 📦 **Infrastructure as Code** - Fully managed with Terraform
-- 🌍 **Global CDN** - Serve content from Cloud Storage with low latency
-- 🔄 **Multi-stage Docker build** - Optimized container images
-- 📊 **Automatic backups** - Daily database backups included
-- 🎨 **Full Ghost features** - Themes, newsletters, memberships, etc.
-
-## 📋 Prerequisites
-
-Before you begin, ensure you have:
-
-1. **Google Cloud Platform Account**
-   - Active GCP project with billing enabled
-   - Project ID ready
-
-2. **Required Tools**
-   - [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/install)
-   - [Terraform](https://www.terraform.io/downloads) (>= 1.0)
-   - [Docker](https://docs.docker.com/get-docker/)
-
-3. **Permissions**
-   - Owner or Editor role on the GCP project
-   - Ability to enable APIs and create resources
+- **Cloud Run**: Serverless Ghost container (scales to zero)
+- **Cloud SQL**: MySQL 8.0 database
+- **Cloud Storage**: Images and file storage
+- **Artifact Registry**: Private Docker registry
+- **Secret Manager**: Secure credential storage
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+### Prerequisites
+
+- GCP account with billing enabled
+- [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+- [Terraform](https://www.terraform.io/downloads) (>= 1.0)
+- [Docker](https://docs.docker.com/get-docker/)
+
+### Deploy in 3 Steps
 
 ```bash
+# 1. Clone and configure
 git clone https://github.com/YOUR_USERNAME/deploy-ghost-on-gcp.git
 cd deploy-ghost-on-gcp
-```
-
-### 2. Configure Environment
-
-```bash
-# Copy environment template
 cp .env.example .env
 
-# Edit .env with your values
-nano .env
-```
+# 2. Edit .env with your GCP project ID
+nano .env  # Set GCP_PROJECT_ID and optionally GHOST_URL
 
-**Required Configuration:**
-
-```bash
-GCP_PROJECT_ID=your-project-id
-GCP_REGION=us-central1
-GHOST_URL=https://blog.yourdomain.com
-MAIL_FROM='"Your Blog Name" <noreply@yourdomain.com>'
-```
-
-### 3. Run Setup Script
-
-The setup script will:
-- Verify all prerequisites
-- Authenticate with GCP
-- Initialize Terraform
-- Create all infrastructure
-- Build and deploy Ghost
-
-```bash
-# Make scripts executable
+# 3. Deploy
 chmod +x setup.sh deploy.sh
-
-# Run setup
 ./setup.sh
 ```
 
-Follow the prompts and confirm when asked to create infrastructure.
+That's it! Your Ghost blog will be running on Cloud Run.
 
-### 4. Configure Your Domain
+### After Deployment
 
-After deployment, you'll receive a Cloud Run URL like:
-```
-https://ghost-cms-xxxxx-uc.a.run.app
-```
-
-**To use your custom domain:**
-
-```bash
-# Map your domain to Cloud Run
-gcloud run domain-mappings create \
-  --service ghost-cms \
-  --domain blog.yourdomain.com \
-  --region us-central1 \
-  --project your-project-id
-```
-
-Then add the DNS records shown in the output to your domain provider.
-
-### 5. Complete Ghost Setup
-
-1. Visit: `https://blog.yourdomain.com/ghost`
-2. Create your admin account
-3. Configure your blog settings
-
-## 📂 Project Structure
-
-```
-deploy-ghost-on-gcp/
-├── Dockerfile                    # Multi-stage Ghost container with GCS adapter
-├── docker-entrypoint.sh          # Custom entrypoint for env substitution
-├── config.production.json        # Ghost configuration template
-├── .env.example                  # Environment variables template
-├── setup.sh                      # One-command setup script
-├── deploy.sh                     # Deployment script
-├── terraform/
-│   ├── main.tf                   # Infrastructure as Code
-│   ├── terraform.tfvars.example  # Terraform variables template
-│   └── .gitignore
-├── .gitignore
-├── LICENSE
-├── CONTRIBUTING.md
-└── README.md
-```
+1. Visit the Cloud Run URL shown in the output
+2. Go to `/ghost` to create your admin account
+3. (Optional) Map a custom domain following the instructions below
 
 ## ⚙️ Configuration
 
-### Environment Variables
+### Required Settings
 
-All configuration is managed through environment variables in `.env`:
-
-| Variable                  | Description                       | Default       |
-| ------------------------- | --------------------------------- | ------------- |
-| `GCP_PROJECT_ID`          | Your GCP project ID               | Required      |
-| `GCP_REGION`              | GCP region for resources          | `us-central1` |
-| `GHOST_URL`               | Public URL for your blog          | Required      |
-| `MAIL_FROM`               | From email address                | Required      |
-| `DATABASE_TIER`           | Cloud SQL instance tier           | `db-f1-micro` |
-| `CLOUD_RUN_MIN_INSTANCES` | Min instances (0 = scale to zero) | `0`           |
-| `CLOUD_RUN_MAX_INSTANCES` | Max instances                     | `10`          |
-
-### Terraform Variables
-
-Configure infrastructure settings in `terraform/terraform.tfvars`:
-
-```hcl
-project_id = "your-project-id"
-region     = "us-central1"
-ghost_url  = "https://blog.yourdomain.com"
-mail_from  = "\"Your Blog Name\" <noreply@yourdomain.com>"
-database_tier = "db-f1-micro"  # or db-g1-small for production
-cloud_run_min_instances = 0    # Set to 1 to avoid cold starts
-```
-
-## 💵 Cost Estimation
-
-**Estimated Monthly Costs (Low Traffic Blog):**
-
-| Service       | Configuration             | Monthly Cost |
-| ------------- | ------------------------- | ------------ |
-| Cloud SQL     | db-f1-micro (shared-core) | ~$15-20      |
-| Cloud Run     | Scales to zero            | ~$0-5        |
-| Cloud Storage | ~5GB content              | ~$0.10-1     |
-| Networking    | Egress & requests         | ~$1-3        |
-| **Total**     |                           | **~$20-30**  |
-
-**For Production (Medium Traffic):**
-
-- Cloud SQL: `db-g1-small` (~$50/month)
-- Cloud Run: Min instances = 1 (~$10/month)
-- **Total: ~$60-80/month**
-
-### Cost Optimization Tips
-
-1. **Scale to Zero**: Keep `CLOUD_RUN_MIN_INSTANCES=0` for low-traffic sites
-2. **Right-size Database**: Start with `db-f1-micro`, upgrade if needed
-3. **Enable CDN**: Use Cloud CDN for static assets (separate setup)
-4. **Monitor Usage**: Set up billing alerts in GCP
-
-## 🛠️ Manual Deployment
-
-If you prefer manual steps or need to troubleshoot:
-
-### Initialize Infrastructure
+Edit `.env` and set:
 
 ```bash
-cd terraform
-
-# Initialize Terraform
-terraform init
-
-# Review planned changes
-terraform plan
-
-# Apply infrastructure
-terraform apply
+GCP_PROJECT_ID=your-project-id
+GCP_REGION=us-central1  # or your preferred region
 ```
 
-### Build and Deploy Ghost
+### Optional Settings
 
 ```bash
-cd ..
+# Custom domain (defaults to Cloud Run URL if not set)
+GHOST_URL=https://blog.yourdomain.com
 
-# Get Artifact Registry URL
-REGISTRY=$(cd terraform && terraform output -raw artifact_registry_url)
+# Email configuration
+MAIL_FROM='"Your Blog" <noreply@yourdomain.com>'
 
-# Build Docker image
-docker build -t ${REGISTRY}/ghost-cms:latest .
-
-# Authenticate Docker with Artifact Registry
-gcloud auth configure-docker us-central1-docker.pkg.dev
-
-# Push image
-docker push ${REGISTRY}/ghost-cms:latest
-
-# Deploy to Cloud Run
-cd terraform
-terraform apply -target=google_cloud_run_v2_service.ghost
+# Instance sizing
+DATABASE_TIER=db-f1-micro          # db-g1-small for production
+CLOUD_RUN_MIN_INSTANCES=0          # Set to 1 to avoid cold starts
+CLOUD_RUN_MAX_INSTANCES=10
 ```
 
-## 🔧 Operations
+## 💵 Costs
+
+**Low traffic blog (~1000 views/month)**: **$20-30/month**
+
+| Service       | Configuration      | Cost/month |
+| ------------- | ------------------ | ---------- |
+| Cloud SQL     | db-f1-micro        | $15-20     |
+| Cloud Run     | Scales to zero     | $0-5       |
+| Cloud Storage | ~5GB               | ~$0.50     |
+| Networking    | Minimal egress     | $1-3       |
+
+**Production (10k+ views/month)**: **$60-80/month**
+- Upgrade to `db-g1-small` (~$50/month)
+- Set `CLOUD_RUN_MIN_INSTANCES=1` (~$10/month)
+
+## 🌐 Custom Domain Setup
+
+After deployment, map your domain:
+
+```bash
+# Create domain mapping
+gcloud run domain-mappings create \
+  --service ghost-cms \
+  --domain blog.yourdomain.com \
+  --region us-central1
+
+# Add the DNS records shown in output to your domain registrar
+```
+
+Update `GHOST_URL` in `.env` and redeploy:
+
+```bash
+./deploy.sh
+```
+
+## 🔧 Common Operations
 
 ### View Logs
 
 ```bash
-# Cloud Run logs
-gcloud run services logs read ghost-cms \
-  --project=your-project-id \
-  --region=us-central1 \
-  --limit=50
-
-# Follow logs in real-time
 gcloud run services logs tail ghost-cms \
   --project=your-project-id \
   --region=us-central1
@@ -273,88 +122,55 @@ gcloud run services logs tail ghost-cms \
 ### Update Ghost
 
 ```bash
-# Update to latest Ghost version
-./deploy.sh
+./deploy.sh  # Pulls latest Ghost 5.x
 ```
 
-The Dockerfile uses `ghost:5-alpine` which pulls the latest Ghost 5.x version.
-
-### Database Backup
-
-Cloud SQL automatically backs up your database daily. To create a manual backup:
+### Manual Backup
 
 ```bash
 gcloud sql backups create \
-  --instance=ghost-db-xxxxx \
-  --project=your-project-id
+  --instance=$(cd terraform && terraform output -raw database_instance_name)
 ```
 
-### Scale Resources
+### Scale Up
 
-**Increase Cloud Run capacity:**
+Edit `terraform/terraform.tfvars`:
 
-```bash
-# Edit terraform/terraform.tfvars
-cloud_run_max_instances = 20
-
-# Apply changes
-cd terraform && terraform apply
-```
-
-**Upgrade database:**
-
-```bash
-# Edit terraform/terraform.tfvars
+```hcl
 database_tier = "db-g1-small"
+cloud_run_max_instances = 20
+```
 
-# Apply changes (may require downtime)
+Apply changes:
+
+```bash
 cd terraform && terraform apply
 ```
 
 ## 🐛 Troubleshooting
 
-### Cloud Run Container Crashes
-
-**Symptom**: Service returns 502 or 503 errors
+### Container Fails to Start
 
 ```bash
-# Check logs for errors
-gcloud run services logs read ghost-cms --limit=100
+# Check logs
+gcloud run services logs read ghost-cms --limit=50
 
-# Common issues:
-# - Database connection: Verify Cloud SQL instance is running
-# - Environment variables: Check Secret Manager access
-# - Memory: Increase to 1Gi or 2Gi in terraform/main.tf
+# Common fix: increase memory in terraform/main.tf
+# Change memory = "1Gi" to memory = "2Gi"
 ```
 
-**Fix database connection issues:**
-```bash
-# Verify Cloud SQL instance is running
-gcloud sql instances describe ghost-db-xxxxx
-
-# Test connection from Cloud Shell
-gcloud sql connect ghost-db-xxxxx --user=ghost
-```
-
-### Upload Issues (Cloud Storage)
-
-**Symptom**: Images fail to upload in Ghost admin
+### Images Not Uploading
 
 ```bash
 # Verify bucket permissions
-gcloud storage buckets get-iam-policy gs://your-bucket-name
+gcloud storage buckets get-iam-policy gs://$(cd terraform && terraform output -raw bucket_name)
 
-# Check CORS configuration
-gcloud storage buckets describe gs://your-bucket-name --format="get(cors)"
+# Should show service account with storage.objectAdmin role
 ```
 
-**Fix**: Ensure the service account has `storage.objectAdmin` role on the bucket.
+### Slow First Load (Cold Start)
 
-### Cold Start Performance
-
-**Symptom**: First request after inactivity is slow
-
-If cold starts are too slow, set minimum instances:
+Set minimum instances to 1:
 
 ```bash
 # Edit terraform/terraform.tfvars
@@ -363,70 +179,13 @@ cloud_run_min_instances = 1
 cd terraform && terraform apply
 ```
 
-**Note**: This will increase costs but eliminate cold starts.
+**Note**: This increases costs (~$10/month) but eliminates cold starts.
 
-### Terraform Errors
+## 📧 Email Configuration
 
-**Error**: "Error creating Service: googleapi: Error 400: Revision template_name is invalid"
+Ghost uses direct mail by default. For production, configure SMTP by adding to `config.production.json`:
 
-```bash
-# Validate Terraform configuration
-terraform validate
-
-# Format Terraform files
-terraform fmt
-
-# Re-initialize Terraform
-terraform init -upgrade
-```
-
-## 🔒 Security Best Practices
-
-1. **Enable Cloud Armor** for DDoS protection
-2. **Use VPC Connector** for private Cloud SQL connection (optional advanced setup)
-3. **Enable Cloud Audit Logs** for compliance
-4. **Rotate Secrets** periodically using Secret Manager
-5. **Set up IAM Alerts** for suspicious activity
-6. **Enable 2FA** on Ghost admin accounts
-7. **Disable deletion protection** carefully (enabled by default on Cloud SQL)
-
-## 🗑️ Cleanup
-
-To completely remove all resources:
-
-```bash
-cd terraform
-
-# This will destroy all infrastructure
-terraform destroy
-
-# Confirm when prompted
-```
-
-**Warning**: This will permanently delete:
-- Cloud SQL database and all content
-- Cloud Storage bucket and all images
-- All Ghost configuration
-
-## 📚 Advanced Configuration
-
-### Custom Themes
-
-Upload themes via Ghost admin or use Cloud Storage:
-
-```bash
-# Upload theme to Cloud Storage
-gsutil cp -r your-theme.zip gs://your-bucket/themes/
-
-# Extract and activate in Ghost admin
-```
-
-### Email Configuration
-
-Ghost uses Direct transport by default. For production, configure SMTP:
-
-Add to `config.production.json`:
-```javascript
+```json
 "mail": {
   "transport": "SMTP",
   "options": {
@@ -439,51 +198,54 @@ Add to `config.production.json`:
 }
 ```
 
-Then add SMTP environment variables to terraform/main.tf or update config dynamically.
+Then redeploy with `./deploy.sh`.
 
-### Custom Domain Mapping
+## 🗑️ Cleanup
 
-After deploying, map your custom domain:
+Remove all resources:
 
 ```bash
-# Create domain mapping
-gcloud run domain-mappings create \
-  --service ghost-cms \
-  --domain blog.yourdomain.com \
-  --region us-central1
-
-# Add DNS records from the output to your domain provider
-# Usually a CNAME pointing to ghs.googlehosted.com
+cd terraform
+terraform destroy
 ```
 
-### CDN Integration
+**Warning**: This permanently deletes your database and all content.
 
-Enable Cloud CDN for better performance:
+## 🛡️ Security Notes
 
-1. Create a load balancer in front of Cloud Run
-2. Configure Cloud CDN on the backend
-3. Update `GHOST_URL` to point to CDN domain
+- Cloud SQL has no public IP (private connection only)
+- Database password stored in Secret Manager
+- Service account with minimal permissions
+- Deletion protection enabled on database by default
+
+## 📂 Project Structure
+
+```
+deploy-ghost-on-gcp/
+├── Dockerfile                   # Multi-stage Ghost + GCS adapter
+├── config.production.json       # Ghost configuration
+├── docker-entrypoint.sh         # Startup script
+├── setup.sh                     # One-command deployment
+├── deploy.sh                    # Update/redeploy
+├── .env.example                 # Configuration template
+└── terraform/
+    ├── main.tf                  # Infrastructure definition
+    └── terraform.tfvars.example # Variables template
+```
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- [Ghost CMS](https://ghost.org/) - The amazing content management system
-- [danmasta/ghost-gcs-adapter](https://github.com/danmasta/ghost-gcs-adapter) - GCS storage adapter for Ghost
-- Google Cloud Platform for the infrastructure
-
-## 📞 Support
-
-- **Ghost Documentation**: https://ghost.org/docs/
-- **GCP Documentation**: https://cloud.google.com/docs
-- **Issues**: [Create an issue](https://github.com/YOUR_USERNAME/deploy-ghost-on-gcp/issues)
+- [Ghost CMS](https://ghost.org/)
+- [ghost-gcs-adapter](https://github.com/danmasta/ghost-gcs-adapter)
 
 ---
 
-Made with ❤️ for the Ghost and GCP communities
+**Need help?** [Open an issue](https://github.com/YOUR_USERNAME/deploy-ghost-on-gcp/issues)

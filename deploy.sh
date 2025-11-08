@@ -26,7 +26,6 @@ fi
 REQUIRED_VARS=(
     "GCP_PROJECT_ID"
     "GCP_REGION"
-    "GHOST_URL"
 )
 
 for var in "${REQUIRED_VARS[@]}"; do
@@ -71,9 +70,14 @@ cd ..
 
 echo -e "${GREEN}Deployment completed successfully!${NC}"
 echo ""
-echo "Your Ghost blog should be available at:"
+echo "Your Ghost blog is available at:"
 cd terraform
-terraform output cloud_run_url
+GHOST_URL_OUTPUT=$(terraform output -raw cloud_run_url 2>/dev/null || echo "")
+echo "$GHOST_URL_OUTPUT"
 cd ..
 echo ""
-echo "To access the admin panel, go to: ${GHOST_URL}/ghost"
+if [ -n "$GHOST_URL" ]; then
+    echo "Admin panel: ${GHOST_URL}/ghost"
+else
+    echo "Admin panel: ${GHOST_URL_OUTPUT}/ghost"
+fi

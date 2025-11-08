@@ -32,8 +32,9 @@ variable "region" {
 }
 
 variable "ghost_url" {
-  description = "Public URL for Ghost blog"
+  description = "Public URL for Ghost blog (optional, defaults to Cloud Run URL)"
   type        = string
+  default     = ""
 }
 
 variable "database_tier" {
@@ -108,7 +109,7 @@ resource "google_storage_bucket" "ghost_content" {
   uniform_bucket_level_access = true
 
   cors {
-    origin          = [var.ghost_url]
+    origin          = [var.ghost_url != "" ? var.ghost_url : "*"]
     method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
     response_header = ["*"]
     max_age_seconds = 3600
@@ -268,7 +269,7 @@ resource "google_cloud_run_v2_service" "ghost" {
 
       env {
         name  = "GHOST_URL"
-        value = var.ghost_url
+        value = var.ghost_url != "" ? var.ghost_url : google_cloud_run_v2_service.ghost.uri
       }
 
       env {
