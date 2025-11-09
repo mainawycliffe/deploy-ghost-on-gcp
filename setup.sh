@@ -124,9 +124,7 @@ echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Your Ghost CMS is deployed!${NC}"
 echo ""
-cd terraform
 CLOUD_RUN_URL=$(terraform output -raw cloud_run_url 2>/dev/null || echo "Check Cloud Run console")
-cd ..
 echo -e "${YELLOW}Cloud Run URL: $CLOUD_RUN_URL${NC}"
 echo ""
 echo -e "${BLUE}IMPORTANT - Next Steps:${NC}"

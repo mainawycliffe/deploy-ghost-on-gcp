@@ -362,10 +362,10 @@ resource "google_cloud_run_v2_service" "ghost" {
           path = "/"
           port = 2368
         }
-        initial_delay_seconds = 20
+        initial_delay_seconds = 30
         timeout_seconds       = 10
-        period_seconds        = 10
-        failure_threshold     = 5
+        period_seconds        = 15
+        failure_threshold     = 20
       }
 
       liveness_probe {

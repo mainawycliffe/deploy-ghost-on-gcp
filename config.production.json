@@ -7,8 +7,6 @@
   "database": {
     "client": "mysql",
     "connection": {
-      "host": "${DATABASE_HOST}",
-      "port": "${DATABASE_PORT}",
       "socketPath": "${DATABASE_SOCKET_PATH}",
       "user": "${DATABASE_USER}",
       "password": "${DATABASE_PASSWORD}",

@@ -16,20 +16,26 @@ RUN apk add --no-cache curl && \
 FROM ghost:5-alpine
 
 # Install runtime dependencies
-RUN apk add --no-cache gettext
+RUN apk add --no-cache gettext jq
 
 # Install Google Cloud Storage SDK
 WORKDIR /var/lib/ghost/current
 RUN npm install --legacy-peer-deps @google-cloud/storage
 
-# Copy GCS adapter from builder stage
-COPY --from=adapter-builder /build/gcs /var/lib/ghost/content/adapters/storage/gcs
+# Set up directory structure and copy all Ghost content first
+WORKDIR /var/lib/ghost
+RUN mkdir -p /var/lib/ghost/content/themes && \
+    mkdir -p /var/lib/ghost/content/data && \
+    mkdir -p /var/lib/ghost/content/images && \
+    mkdir -p /var/lib/ghost/content/logs && \
+    mkdir -p /var/lib/ghost/content/settings && \
+    mkdir -p /var/lib/ghost/content/adapters/storage && \
+    cp -r /var/lib/ghost/current/content/themes/* /var/lib/ghost/content/themes/ && \
+    ls -la /var/lib/ghost/content/themes/ && \
+    chown -R node:node /var/lib/ghost/content
 
-# Set up directory structure and permissions
-WORKDIR /var/lib/ghost/current
-RUN chown -R node:node /var/lib/ghost/content && \
-    cp -r /var/lib/ghost/current/content/themes /var/lib/ghost/content/ && \
-    chown -R node:node /var/lib/ghost/content/themes
+# Copy GCS adapter from builder stage (after directories are set up)
+COPY --from=adapter-builder --chown=node:node /build/gcs /var/lib/ghost/content/adapters/storage/gcs
 
 # Copy custom configuration
 COPY config.production.json /var/lib/ghost/config.production.json

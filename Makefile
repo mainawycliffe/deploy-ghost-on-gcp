@@ -1,4 +1,4 @@
-.PHONY: help setup deploy logs plan destroy
+.PHONY: help setup deploy logs plan destroy cleanup
 
 help:
 	@echo "Ghost CMS on GCP"
@@ -8,6 +8,7 @@ help:
 	@echo "  make logs      - View recent logs"
 	@echo "  make plan      - Preview Terraform changes"
 	@echo "  make destroy   - Remove all resources"
+	@echo "  make cleanup   - Destroy resources and wipe state for fresh deployment"
 
 setup:
 	@./setup.sh
@@ -25,3 +26,10 @@ plan:
 
 destroy:
 	@cd terraform && terraform destroy
+
+cleanup:
+	@echo "Destroying all resources and cleaning up state..."
+	@cd terraform && terraform destroy -auto-approve || true
+	@echo "Removing Terraform state files..."
+	@rm -rf terraform/.terraform terraform/.terraform.lock.hcl terraform/terraform.tfstate* terraform/tfplan terraform/terraform.tfvars
+	@echo "✓ Cleanup complete! Ready for fresh deployment with 'make setup'"
