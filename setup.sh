@@ -65,11 +65,13 @@ cd terraform
 
 if [ ! -f terraform.tfvars ]; then
     GHOST_URL_VALUE="${GHOST_URL:-}"
+    SERVICE_NAME_VALUE="${SERVICE_NAME:-ghost-cms}"
     cat > terraform.tfvars <<EOF
-project_id = "$GCP_PROJECT_ID"
-region     = "$GCP_REGION"
-ghost_url  = "$GHOST_URL_VALUE"
-mail_from  = "\"Ghost Test\" <noreply@example.com>"
+project_id   = "$GCP_PROJECT_ID"
+region       = "$GCP_REGION"
+service_name = "$SERVICE_NAME_VALUE"
+ghost_url    = "$GHOST_URL_VALUE"
+mail_from    = "\"Ghost Test\" <noreply@example.com>"
 
 database_tier           = "$DATABASE_TIER"
 cloud_run_min_instances = $CLOUD_RUN_MIN_INSTANCES

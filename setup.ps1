@@ -61,11 +61,13 @@ Set-Location terraform
 
 if (-Not (Test-Path "terraform.tfvars")) {
     $ghostUrl = if ($env:GHOST_URL) { $env:GHOST_URL } else { "" }
+    $serviceName = if ($env:SERVICE_NAME) { $env:SERVICE_NAME } else { "ghost-cms" }
     @"
-project_id = "$env:GCP_PROJECT_ID"
-region     = "$env:GCP_REGION"
-ghost_url  = "$ghostUrl"
-mail_from  = $env:MAIL_FROM
+project_id   = "$env:GCP_PROJECT_ID"
+region       = "$env:GCP_REGION"
+service_name = "$serviceName"
+ghost_url    = "$ghostUrl"
+mail_from    = $env:MAIL_FROM
 
 database_tier           = "$env:DATABASE_TIER"
 cloud_run_min_instances = $env:CLOUD_RUN_MIN_INSTANCES

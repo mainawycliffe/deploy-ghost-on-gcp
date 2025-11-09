@@ -31,6 +31,17 @@ variable "region" {
   default     = "us-central1"
 }
 
+variable "service_name" {
+  description = "Base name for all resources (e.g., 'ghost-cms', 'my-blog')"
+  type        = string
+  default     = "ghost-cms"
+
+  validation {
+    condition     = can(regex("^[a-z][a-z0-9-]{0,61}[a-z0-9]$", var.service_name))
+    error_message = "Service name must start with a letter, contain only lowercase letters, numbers, and hyphens, and be 1-63 characters long."
+  }
+}
+
 variable "ghost_url" {
   description = "Public URL for Ghost blog (optional, defaults to Cloud Run URL)"
   type        = string
@@ -88,9 +99,9 @@ resource "random_id" "suffix" {
 
 # Service Account for Ghost Cloud Run
 resource "google_service_account" "ghost_sa" {
-  account_id   = "ghost-cms-sa"
-  display_name = "Ghost CMS Service Account"
-  description  = "Service account for Ghost CMS running on Cloud Run"
+  account_id   = "${var.service_name}-sa"
+  display_name = "${var.service_name} Service Account"
+  description  = "Service account for ${var.service_name} running on Cloud Run"
 }
 
 # Grant Cloud SQL Client role to service account
@@ -102,7 +113,7 @@ resource "google_project_iam_member" "ghost_cloudsql_client" {
 
 # Cloud Storage Bucket for Ghost content
 resource "google_storage_bucket" "ghost_content" {
-  name          = "${var.project_id}-ghost-content-${random_id.suffix.hex}"
+  name          = "${var.project_id}-${var.service_name}-content-${random_id.suffix.hex}"
   location      = var.region
   force_destroy = false
 
@@ -148,7 +159,7 @@ resource "random_password" "db_password" {
 
 # Store database password in Secret Manager
 resource "google_secret_manager_secret" "db_password" {
-  secret_id = "ghost-db-password"
+  secret_id = "${var.service_name}-db-password"
 
   replication {
     auto {}
@@ -171,7 +182,7 @@ resource "google_secret_manager_secret_iam_member" "ghost_secret_accessor" {
 
 # Cloud SQL MySQL Instance
 resource "google_sql_database_instance" "ghost_db" {
-  name             = "ghost-db-${random_id.suffix.hex}"
+  name             = "${var.service_name}-db-${random_id.suffix.hex}"
   database_version = "MYSQL_8_0"
   region           = var.region
 
@@ -226,8 +237,8 @@ resource "google_sql_user" "ghost_user" {
 # Artifact Registry Repository for Docker images
 resource "google_artifact_registry_repository" "ghost_repo" {
   location      = var.region
-  repository_id = "ghost-cms"
-  description   = "Docker repository for Ghost CMS"
+  repository_id = var.service_name
+  description   = "Docker repository for ${var.service_name}"
   format        = "DOCKER"
 
   depends_on = [google_project_service.required_apis]
@@ -246,7 +257,7 @@ resource "terraform_data" "build_ghost_image" {
     command = <<-EOT
       gcloud builds submit \
         --config=${path.module}/../cloudbuild.yaml \
-        --substitutions=_REGION=${var.region},_REPO_ID=ghost-cms,_TAG=latest \
+        --substitutions=_REGION=${var.region},_REPO_ID=${var.service_name},_SERVICE_NAME=${var.service_name},_TAG=latest \
         --project=${var.project_id} \
         ${path.module}/..
     EOT
@@ -260,7 +271,7 @@ resource "terraform_data" "build_ghost_image" {
 
 # Cloud Run Service
 resource "google_cloud_run_v2_service" "ghost" {
-  name     = "ghost-cms"
+  name     = var.service_name
   location = var.region
 
   template {
@@ -273,7 +284,7 @@ resource "google_cloud_run_v2_service" "ghost" {
 
     containers {
       # Image will be updated by deploy.sh script
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.ghost_repo.repository_id}/ghost-cms:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.ghost_repo.repository_id}/${var.service_name}:latest"
 
       ports {
         container_port = 2368
@@ -293,7 +304,7 @@ resource "google_cloud_run_v2_service" "ghost" {
 
       env {
         name  = "GHOST_URL"
-        value = var.ghost_url != "" ? var.ghost_url : "https://ghost-cms-PROJECT_ID.run.app"
+        value = var.ghost_url != "" ? var.ghost_url : "https://${var.service_name}-PROJECT_ID.run.app"
       }
 
       env {

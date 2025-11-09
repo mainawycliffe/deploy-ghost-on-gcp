@@ -4,9 +4,9 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:${_TAG}'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/${_SERVICE_NAME}:${_TAG}'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:latest'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/${_SERVICE_NAME}:latest'
       - '.'
     id: 'build-image'
 
@@ -14,19 +14,20 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:${_TAG}'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/${_SERVICE_NAME}:${_TAG}'
     id: 'push-tagged'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:latest'
+      - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/${_SERVICE_NAME}:latest'
     id: 'push-latest'
 
 # Substitution variables
 substitutions:
   _REGION: 'us-central1'
   _REPO_ID: 'ghost-cms'
+  _SERVICE_NAME: 'ghost-cms'
   _TAG: 'latest'
 
 # Use Cloud Build's default service account
@@ -36,5 +37,5 @@ options:
 
 # Images to be pushed to registry
 images:
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:${_TAG}'
-  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/ghost-cms:latest'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/${_SERVICE_NAME}:${_TAG}'
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_ID}/${_SERVICE_NAME}:latest'

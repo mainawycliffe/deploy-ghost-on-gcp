@@ -84,6 +84,9 @@ GHOST_URL=
 ### Optional Settings
 
 ```bash
+# Resource naming (useful for multiple deployments or custom branding)
+SERVICE_NAME=ghost-cms  # Must be lowercase, letters/numbers/hyphens only
+
 # Custom domain
 GHOST_URL=https://blog.yourdomain.com
 
