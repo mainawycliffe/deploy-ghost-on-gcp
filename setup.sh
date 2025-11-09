@@ -66,6 +66,7 @@ cd terraform
 if [ ! -f terraform.tfvars ]; then
     GHOST_URL_VALUE="${GHOST_URL:-}"
     SERVICE_NAME_VALUE="${SERVICE_NAME:-ghost-cms}"
+    DELETION_PROTECTION_VALUE="${DELETION_PROTECTION:-false}"
     cat > terraform.tfvars <<EOF
 project_id   = "$GCP_PROJECT_ID"
 region       = "$GCP_REGION"
@@ -76,6 +77,7 @@ mail_from    = "\"Ghost Test\" <noreply@example.com>"
 database_tier           = "$DATABASE_TIER"
 cloud_run_min_instances = $CLOUD_RUN_MIN_INSTANCES
 cloud_run_max_instances = $CLOUD_RUN_MAX_INSTANCES
+deletion_protection     = $DELETION_PROTECTION_VALUE
 EOF
     echo -e "${GREEN}✓ Created terraform.tfvars${NC}"
 else

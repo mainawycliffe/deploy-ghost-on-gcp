@@ -97,6 +97,9 @@ MAIL_FROM='"Your Blog" <noreply@yourdomain.com>'
 DATABASE_TIER=db-f1-micro          # db-g1-small for production
 CLOUD_RUN_MIN_INSTANCES=0          # Set to 1 to avoid cold starts
 CLOUD_RUN_MAX_INSTANCES=10
+
+# Database protection
+DELETION_PROTECTION=false          # Set to true for production to prevent accidental deletion
 ```
 
 ## 💵 Costs

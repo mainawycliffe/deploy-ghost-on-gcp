@@ -71,6 +71,12 @@ variable "cloud_run_max_instances" {
   default     = 10
 }
 
+variable "deletion_protection" {
+  description = "Enable deletion protection for Cloud SQL instance (recommended for production)"
+  type        = bool
+  default     = false
+}
+
 # Provider Configuration
 provider "google" {
   project = var.project_id
@@ -215,7 +221,7 @@ resource "google_sql_database_instance" "ghost_db" {
     }
   }
 
-  deletion_protection = true
+  deletion_protection = var.deletion_protection
 
   depends_on = [google_project_service.required_apis]
 }

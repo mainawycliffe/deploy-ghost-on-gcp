@@ -62,6 +62,7 @@ Set-Location terraform
 if (-Not (Test-Path "terraform.tfvars")) {
     $ghostUrl = if ($env:GHOST_URL) { $env:GHOST_URL } else { "" }
     $serviceName = if ($env:SERVICE_NAME) { $env:SERVICE_NAME } else { "ghost-cms" }
+    $deletionProtection = if ($env:DELETION_PROTECTION) { $env:DELETION_PROTECTION } else { "false" }
     @"
 project_id   = "$env:GCP_PROJECT_ID"
 region       = "$env:GCP_REGION"
@@ -72,6 +73,7 @@ mail_from    = $env:MAIL_FROM
 database_tier           = "$env:DATABASE_TIER"
 cloud_run_min_instances = $env:CLOUD_RUN_MIN_INSTANCES
 cloud_run_max_instances = $env:CLOUD_RUN_MAX_INSTANCES
+deletion_protection     = $deletionProtection
 "@ | Out-File -FilePath "terraform.tfvars" -Encoding UTF8
     Write-Host "✓ Created terraform.tfvars" -ForegroundColor Green
 } else {
