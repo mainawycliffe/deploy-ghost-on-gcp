@@ -72,9 +72,9 @@ variable "cloud_run_max_instances" {
 }
 
 variable "deletion_protection" {
-  description = "Enable deletion protection for Cloud SQL instance (recommended for production)"
+  description = "Enable deletion protection for Cloud SQL instance (set to false for testing)"
   type        = bool
-  default     = false
+  default     = true
 }
 
 # Provider Configuration

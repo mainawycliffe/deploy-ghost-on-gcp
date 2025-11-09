@@ -99,7 +99,7 @@ CLOUD_RUN_MIN_INSTANCES=0          # Set to 1 to avoid cold starts
 CLOUD_RUN_MAX_INSTANCES=10
 
 # Database protection
-DELETION_PROTECTION=false          # Set to true for production to prevent accidental deletion
+DELETION_PROTECTION=true           # Set to false for testing/development to allow easy cleanup
 ```
 
 ## 💵 Costs

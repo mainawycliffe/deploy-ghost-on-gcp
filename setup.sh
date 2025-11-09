@@ -66,7 +66,7 @@ cd terraform
 if [ ! -f terraform.tfvars ]; then
     GHOST_URL_VALUE="${GHOST_URL:-}"
     SERVICE_NAME_VALUE="${SERVICE_NAME:-ghost-cms}"
-    DELETION_PROTECTION_VALUE="${DELETION_PROTECTION:-false}"
+    DELETION_PROTECTION_VALUE="${DELETION_PROTECTION:-true}"
     cat > terraform.tfvars <<EOF
 project_id   = "$GCP_PROJECT_ID"
 region       = "$GCP_REGION"

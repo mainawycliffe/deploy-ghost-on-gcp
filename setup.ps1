@@ -62,7 +62,7 @@ Set-Location terraform
 if (-Not (Test-Path "terraform.tfvars")) {
     $ghostUrl = if ($env:GHOST_URL) { $env:GHOST_URL } else { "" }
     $serviceName = if ($env:SERVICE_NAME) { $env:SERVICE_NAME } else { "ghost-cms" }
-    $deletionProtection = if ($env:DELETION_PROTECTION) { $env:DELETION_PROTECTION } else { "false" }
+    $deletionProtection = if ($env:DELETION_PROTECTION) { $env:DELETION_PROTECTION } else { "true" }
     @"
 project_id   = "$env:GCP_PROJECT_ID"
 region       = "$env:GCP_REGION"
