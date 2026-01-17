@@ -68,7 +68,7 @@ variable "cloud_run_min_instances" {
 variable "cloud_run_max_instances" {
   description = "Maximum number of Cloud Run instances"
   type        = number
-  default     = 10
+  default     = 1
 }
 
 variable "deletion_protection" {
@@ -195,14 +195,13 @@ resource "google_sql_database_instance" "ghost_db" {
   settings {
     tier              = var.database_tier
     availability_type = "ZONAL"
-    disk_type         = "PD_SSD"
+    disk_type         = "PD_HDD"
     disk_size         = 10
     disk_autoresize   = true
 
     backup_configuration {
-      enabled            = true
-      start_time         = "03:00"
-      binary_log_enabled = true
+      enabled            = false
+      binary_log_enabled = false
     }
 
     ip_configuration {
@@ -298,8 +297,8 @@ resource "google_cloud_run_v2_service" "ghost" {
 
       resources {
         limits = {
-          cpu    = "1"
-          memory = "1Gi"
+          cpu    = "0.5"
+          memory = "512Mi"
         }
       }
 
@@ -361,27 +360,6 @@ resource "google_cloud_run_v2_service" "ghost" {
       volume_mounts {
         name       = "cloudsql"
         mount_path = "/cloudsql"
-      }
-
-      startup_probe {
-        http_get {
-          path = "/"
-          port = 2368
-        }
-        initial_delay_seconds = 30
-        timeout_seconds       = 10
-        period_seconds        = 15
-        failure_threshold     = 20
-      }
-
-      liveness_probe {
-        http_get {
-          path = "/"
-          port = 2368
-        }
-        initial_delay_seconds = 30
-        timeout_seconds       = 3
-        period_seconds        = 30
       }
     }
 
