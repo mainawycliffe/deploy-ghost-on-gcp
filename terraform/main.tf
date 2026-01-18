@@ -77,6 +77,12 @@ variable "deletion_protection" {
   default     = true
 }
 
+variable "enable_cdn" {
+  description = "Enable Cloud CDN in front of Cloud Run (optional, defaults to true)"
+  type        = bool
+  default     = true
+}
+
 # Provider Configuration
 provider "google" {
   project = var.project_id
@@ -395,6 +401,132 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
   member   = "allUsers"
 }
 
+# Cloud CDN Configuration (optional, enabled by default)
+resource "google_compute_network_endpoint_group" "ghost_neg" {
+  count                 = var.enable_cdn ? 1 : 0
+  name                  = "${var.service_name}-neg"
+  network_endpoint_type = "SERVERLESS"
+  region                = var.region
+
+  cloud_run {
+    service = google_cloud_run_v2_service.ghost.name
+  }
+
+  depends_on = [google_cloud_run_v2_service.ghost]
+}
+
+resource "google_compute_backend_service" "ghost_backend" {
+  count                           = var.enable_cdn ? 1 : 0
+  name                            = "${var.service_name}-backend"
+  protocol                        = "HTTPS"
+  port_name                       = "http"
+  timeout_sec                     = 30
+  enable_cdn                      = true
+  session_affinity                = "NONE"
+  connection_draining_timeout_sec = 300
+
+  backend {
+    group = google_compute_network_endpoint_group.ghost_neg[0].id
+  }
+
+  # Health check for Cloud Run
+  health_checks = [google_compute_health_check.ghost_health_check[0].id]
+
+  # CDN policy configuration (optimized for cost)
+  cdn_policy {
+    cache_mode = "CACHE_ALL_STATIC"
+    # Aggressive caching for static content reduces origin requests
+    client_ttl       = 86400   # 24 hours - clients cache for max time
+    default_ttl      = 604800  # 7 days - origin cache by default
+    max_ttl          = 2592000 # 30 days - max cache duration
+    negative_caching = true
+    # Longer negative caching reduces error-related origin hits
+    negative_caching_policy {
+      code = 404
+      ttl  = 3600 # 1 hour for not found
+    }
+    negative_caching_policy {
+      code = 410
+      ttl  = 86400 # 24 hours for gone
+    }
+  }
+
+  depends_on = [google_compute_network_endpoint_group.ghost_neg]
+}
+
+resource "google_compute_health_check" "ghost_health_check" {
+  count               = var.enable_cdn ? 1 : 0
+  name                = "${var.service_name}-health-check"
+  check_interval_sec  = 30 # Reduced from 10s to minimize health check costs
+  timeout_sec         = 5
+  healthy_threshold   = 2
+  unhealthy_threshold = 3
+
+  https_health_check {
+    port         = "443"
+    request_path = "/ghost/api/v3/site/"
+  }
+}
+
+resource "google_compute_url_map" "ghost_url_map" {
+  count           = var.enable_cdn ? 1 : 0
+  name            = "${var.service_name}-url-map"
+  default_service = google_compute_backend_service.ghost_backend[0].id
+}
+
+resource "google_compute_ssl_certificate" "ghost_cert" {
+  count = var.enable_cdn ? 1 : 0
+  name  = "${var.service_name}-cert"
+  managed {
+    domains = [var.ghost_url != "" ? var.ghost_url : null]
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [google_project_service.required_apis]
+}
+
+resource "google_compute_target_https_proxy" "ghost_https_proxy" {
+  count            = var.enable_cdn ? 1 : 0
+  name             = "${var.service_name}-https-proxy"
+  url_map          = google_compute_url_map.ghost_url_map[0].id
+  ssl_certificates = [google_compute_ssl_certificate.ghost_cert[0].id]
+  ssl_policy       = google_compute_ssl_policy.ghost_ssl_policy[0].id
+}
+
+resource "google_compute_ssl_policy" "ghost_ssl_policy" {
+  count           = var.enable_cdn ? 1 : 0
+  name            = "${var.service_name}-ssl-policy"
+  profile         = "MODERN"
+  min_tls_version = "TLS_1_2"
+}
+
+resource "google_compute_target_http_proxy" "ghost_http_proxy" {
+  count   = var.enable_cdn ? 1 : 0
+  name    = "${var.service_name}-http-proxy"
+  url_map = google_compute_url_map.ghost_url_map[0].id
+}
+
+resource "google_compute_global_forwarding_rule" "ghost_https" {
+  count                 = var.enable_cdn ? 1 : 0
+  name                  = "${var.service_name}-https-lb"
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.ghost_https_proxy[0].id
+}
+
+resource "google_compute_global_forwarding_rule" "ghost_http" {
+  count                 = var.enable_cdn ? 1 : 0
+  name                  = "${var.service_name}-http-lb"
+  ip_protocol           = "TCP"
+  load_balancing_scheme = "EXTERNAL"
+  port_range            = "80"
+  target                = google_compute_target_http_proxy.ghost_http_proxy[0].id
+}
+
 # Outputs
 output "cloud_run_url" {
   description = "URL of the Cloud Run service"
@@ -424,4 +556,14 @@ output "artifact_registry_url" {
 output "service_account_email" {
   description = "Email of the service account"
   value       = google_service_account.ghost_sa.email
+}
+
+output "cdn_ip_address" {
+  description = "External IP address of the Cloud CDN load balancer (if enabled)"
+  value       = var.enable_cdn ? google_compute_global_forwarding_rule.ghost_https[0].ip_address : null
+}
+
+output "cdn_enabled" {
+  description = "Whether Cloud CDN is enabled"
+  value       = var.enable_cdn
 }

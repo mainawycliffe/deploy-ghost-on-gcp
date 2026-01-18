@@ -10,42 +10,59 @@ Deploy a self-hosted Ghost CMS on GCP with serverless architecture. Scales to ze
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Internet Users                          │
-└────────────────────────────┬────────────────────────────────────┘
-                             │ HTTPS
+┌──────────────────────────────────────────────────────────────────┐
+│                         Internet Users                           │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │ HTTPS
+                           ▼
+                ┌──────────────────────────┐
+                │  Cloud CDN (optional)    │  (enabled by default)
+                │  • Global cache          │
+                │  • Static content        │
+                │  • DDoS protection       │
+                └────────────┬─────────────┘
+                             │
                              ▼
-                   ┌─────────────────────┐
-                   │   Cloud Run (Ghost)  │
-                   │  • Serverless        │
-                   │  • Scales to zero    │
-                   │  • Port 2368         │
-                   └──────┬──────┬────────┘
-                          │      │
-         ┌────────────────┘      └────────────────┐
-         │                                        │
-         ▼                                        ▼
-┌─────────────────┐                    ┌──────────────────┐
-│  Cloud SQL      │                    │  Cloud Storage   │
-│  • MySQL 8.0    │                    │  (GCS)           │
-│  • Private IP   │                    │  • Images        │
-│  • Unix socket  │                    │  • Files         │
-│  • Automated    │                    │  • Public read   │
-│    backups      │                    │  • GCS adapter   │
-└─────────────────┘                    └──────────────────┘
+                ┌──────────────────────────┐
+                │  Load Balancer           │
+                │  • HTTPS/HTTP            │
+                │  • SSL managed           │
+                │  • Health check          │
+                └────────────┬─────────────┘
+                             │
+                             ▼
+                  ┌────────────────────┐
+                  │ Cloud Run (Ghost)  │
+                  │ • Serverless       │
+                  │ • Scales to zero   │
+                  │ • Port 2368        │
+                  └─────┬──────┬───────┘
+                        │      │
+      ┌─────────────────┘      └─────────────────┐
+      │                                          │
+      ▼                                          ▼
+┌──────────────┐                      ┌──────────────────┐
+│ Cloud SQL    │                      │ Cloud Storage    │
+│ • MySQL 8.0  │                      │ (GCS)            │
+│ • Private IP │                      │ • Images         │
+│ • Automated  │                      │ • Files          │
+│   backups    │                      │ • Public read    │
+└──────────────┘                      └──────────────────┘
 
-┌─────────────────────────────────────────────────────────────────┐
-│                     Supporting Services                          │
-├─────────────────────────────────────────────────────────────────┤
-│  • Artifact Registry: Docker images                             │
-│  • Secret Manager: Database password                            │
-│  • Cloud Build: Automated image builds                          │
-│  • Service Account: Least-privilege IAM                         │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     Supporting Services                           │
+├──────────────────────────────────────────────────────────────────┤
+│  • Artifact Registry: Docker images                              │
+│  • Secret Manager: Database password                             │
+│  • Cloud Build: Automated image builds                           │
+│  • Service Account: Least-privilege IAM                          │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### Components
 
+- **Cloud CDN** (optional): Global edge caching for static content, DDoS protection
+- **Load Balancer**: HTTP/HTTPS traffic distribution with managed SSL
 - **Cloud Run**: Serverless Ghost container (scales to zero, 0-10 instances)
 - **Cloud SQL**: MySQL 8.0 database with automated backups
 - **Cloud Storage**: Images and file storage with GCS adapter
@@ -136,26 +153,51 @@ DATABASE_TIER=db-f1-micro          # db-g1-small for production
 CLOUD_RUN_MIN_INSTANCES=0          # Set to 1 to avoid cold starts
 CLOUD_RUN_MAX_INSTANCES=10
 
+# Cloud CDN (optional, enabled by default)
+ENABLE_CDN=true                    # Set to false to disable CDN and use Cloud Run URL directly
+
 # Database protection
 DELETION_PROTECTION=true           # Set to false for testing/development to allow easy cleanup
 ```
 
 ## 💵 Costs
 
-**Low traffic blog (~1000 views/month)**: **$20-30/month**
+**Low traffic blog (~1000 views/month)**: **$20-30/month** (CDN disabled) or **$22-32/month** (CDN enabled)
 
-| Service       | Configuration      | Cost/month |
-| ------------- | ------------------ | ---------- |
-| Cloud SQL     | db-f1-micro        | $15-20     |
-| Cloud Run     | Scales to zero     | $0-5       |
-| Cloud Storage | ~5GB               | ~$0.50     |
-| Networking    | Minimal egress     | $1-3       |
+| Service       | Configuration     | Cost/month |
+| ------------- | ----------------- | ---------- |
+| Cloud SQL     | db-f1-micro       | $15-20     |
+| Cloud Run     | Scales to zero    | $0-5       |
+| Cloud Storage | ~5GB              | ~$0.50     |
+| Cloud CDN     | ~100GB cache hits | $1-2       |
+| Networking    | Minimal egress    | $1-3       |
 
-**Production (10k+ views/month)**: **$60-80/month**
+**Production (10k+ views/month)**: **$60-80/month** (with CDN)
+
 - Upgrade to `db-g1-small` (~$50/month)
 - Set `CLOUD_RUN_MIN_INSTANCES=1` (~$10/month)
+- Cloud CDN ~$2-3/month with high traffic
+
+**Cloud CDN Benefits**:
+
+- Minimal cost increase (~$1-2/month for low traffic)
+- Global edge caching reduces latency
+- DDoS protection included
+- Caches static assets (images, CSS, JS) with 7-day default TTL
+- Aggressive caching policy (30-day max) minimizes origin requests
+- Health checks only every 30 seconds to reduce costs
+- Disable if not needed with `ENABLE_CDN=false`
+
+**Cost Optimization**:
+
+- Static content cached for up to 30 days (vs 1 hour previously)
+- 24-hour client-side caching reduces repeat downloads
+- Aggressive negative caching prevents repeated 404 checks
+- Health check frequency optimized for cost vs reliability
 
 ## 🌐 Custom Domain Setup
+
+### Without Cloud CDN
 
 After deployment, map your domain:
 
@@ -174,6 +216,27 @@ Update `GHOST_URL` in `.env` and redeploy:
 ```bash
 make deploy
 ```
+
+### With Cloud CDN (Enabled by Default)
+
+When `ENABLE_CDN=true` (default), point your domain to the load balancer IP:
+
+```bash
+# Get the CDN load balancer IP after deployment
+cd terraform && terraform output cdn_ip_address
+
+# Add an A record in your DNS registrar pointing to this IP
+# Example: blog.yourdomain.com -> 203.0.113.45
+```
+
+Then update `GHOST_URL` in `.env` and redeploy:
+
+```bash
+GHOST_URL=https://blog.yourdomain.com
+make deploy
+```
+
+**Note**: When using Cloud CDN, your domain must be set in `GHOST_URL` before deployment for SSL certificate provisioning.
 
 ## 🔧 Common Operations
 

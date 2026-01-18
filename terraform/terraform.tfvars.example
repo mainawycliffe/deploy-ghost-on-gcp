@@ -13,3 +13,6 @@ database_tier = "db-f1-micro"  # Use db-g1-small or higher for production
 # Cloud Run Scaling
 cloud_run_min_instances = 0  # Set to 1 to avoid cold starts (costs more)
 cloud_run_max_instances = 1
+
+# Cloud CDN Configuration
+enable_cdn = true  # Set to false to disable CDN and use Cloud Run URL directly
